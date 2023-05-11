@@ -1,0 +1,9 @@
+numpy==1.19.5
+Pillow==9.5.0
+pytesseract==0.3.8
+python_Levenshtein==0.21.0
+scikit_learn==1.2.2
+torch==2.0.1
+opencv-python>=4.5.4.58
+jaro-winkler
+

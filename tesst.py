@@ -12,11 +12,19 @@ from PIL import Image
 from Levenshtein import distance as lev
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import replicate
 
+# Function to call ESRGAN API from replicate
+def apiESRGAN(imagePATH):
+    output = replicate.run(
+        "xinntao/realesrgan:1b976a4d456ed9e4d1a846597b7614e79eadad3032e9124fa63859db0fd59b56",
+        input={"img": open(imagePATH, "rb")}
+    )
+    return output
 
 # Function to extract text from json file
 def jsonText(name):
-    with open('dataset/testing_data/annotations/' + name + '.json', 'r') as f:
+    with open('test_dataset/ground_truth/' + name + '.json', 'r') as f:
         data = json.load(f)
     text_list = []
     for item in data['form']:
@@ -105,8 +113,44 @@ def metricsResults(lowquality, highquality, original):
     # Create array with all the metrics
     metricsArray = [lowJaro, highJaro, highJaro - lowJaro, psnr('test.png', 'srgan.png'), levenshtein(lowquality, original), levenshtein(highquality, original), levenshtein(lowquality, original) - levenshtein(highquality, original), cosineSimilarity(lowquality, original), cosineSimilarity(highquality, original), cosineSimilarity(highquality, original) - cosineSimilarity(lowquality, original)]
 
-# Define the folder path
-folder_path = "dataset/testing_data/images/"
+# Function to run GAN model on images
+def gan(device, model_path, test_img_folder):
+    Choose_device = device 
+    model_path = model_path
+    device = torch.device(Choose_device) 
+    test_img_folder = test_img_folder
+
+    model = arch.RRDBNet(3, 3, 64, 23, gc=32)
+    model.load_state_dict(torch.load(model_path), strict=True)
+    model.eval()
+    model = model.to(device)
+
+    print('Model path {:s}. \nTesting...'.format(model_path))
+
+    idx = 0
+    for path in glob.glob(test_img_folder):
+        idx += 1
+        base = osp.splitext(osp.basename(path))[0]
+        print(idx, base)
+        # read images
+        img = cv2.imread(path, cv2.IMREAD_COLOR)
+        img = img * 1.0 / 255
+        img = torch.from_numpy(np.transpose(img[:, :, [2, 1, 0]], (2, 0, 1))).float()
+        img_LR = img.unsqueeze(0)
+        img_LR = img_LR.to(device)
+
+        with torch.no_grad():
+            output = model(img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
+        print("Model output:", output.shape)
+        output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))
+        print("Output transposed:", output.shape)
+        output = (output * 255.0).round()
+        print("Output rounded:", output.shape)
+        cv2.imwrite('results/{:s}.png'.format(base), output)
+        print("Image written to disk")
+
+# # Define the folder path
+# folder_path = "test_dataset/images/"
 
 # # Get a list of all files and directories in the folder
 # items = os.listdir(folder_path)
@@ -116,62 +160,12 @@ folder_path = "dataset/testing_data/images/"
 #     if os.path.isfile(os.path.join(folder_path, item)):
 #         print(item)
 
-# Extract texts from ground truth, low resolution image and high resolution image
-original = jsonText('83635935')
-tessLowW = tesseract('test.png')
-tessHighW = tesseract('srgan.png')
+# # Extract texts from ground truth, low resolution image and high resolution image
+# original = jsonText('83635935')
+# tessLowW = tesseract('test.png')
+# tessHighW = tesseract('srgan.png')
 
-metricsResults(tessLowW, tessHighW, original)
+# metricsResults(tessLowW, tessHighW, original)
 
-# import replicate
-# output = replicate.run(
-#     "xinntao/realesrgan:1b976a4d456ed9e4d1a846597b7614e79eadad3032e9124fa63859db0fd59b56",
-#     input={"img": open("test.png", "rb")}
-# )
-# print(output)
+gan("cuda", 'models/RRDB_ESRGAN_x4.pth', 'test_dataset/images/*')
 
-
-
-
-Choose_device = "cpu"  #@param ["cuda","cpu"]
-
-model_path = 'models/RRDB_ESRGAN_x4.pth' #@param ['models/RRDB_ESRGAN_x4.pth','models/RRDB_PSNR_x4.pth','models/PPON_G.pth','models/PPON_D.pth']  
-device = torch.device(Choose_device) 
-
-
-test_img_folder = 'LR/*'
-
-model = arch.RRDBNet(3, 3, 64, 23, gc=32)
-model.load_state_dict(torch.load(model_path), strict=True)
-model.eval()
-model = model.to(device)
-
-print('Model path {:s}. \nTesting...'.format(model_path))
-
-idx = 0
-for path in glob.glob(test_img_folder):
-    idx += 1
-    base = osp.splitext(osp.basename(path))[0]
-    print(idx, base)
-    # read images
-    img = cv2.imread(path, cv2.IMREAD_COLOR)
-    img = img * 1.0 / 255
-    img = torch.from_numpy(np.transpose(img[:, :, [2, 1, 0]], (2, 0, 1))).float()
-    img_LR = img.unsqueeze(0)
-    img_LR = img_LR.to(device)
-
-    # with torch.no_grad():
-    #     output = model(img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
-    # output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))
-    # output = (output * 255.0).round()
-    # cv2.imwrite('results/{:s}.png'.format(base), output)
-
-    with torch.no_grad():
-        output = model(img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
-    print("Model output:", output.shape)
-    output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))
-    print("Output transposed:", output.shape)
-    output = (output * 255.0).round()
-    print("Output rounded:", output.shape)
-    cv2.imwrite('results/{:s}.png'.format(base), output)
-    print("Image written to disk")

@@ -87,32 +87,33 @@ def metricsResults(lowquality, highquality, original):
     lowJaro = jaroMetric(lowquality, original)
     highJaro = jaroMetric(highquality, original)
     jaroImprovement = highJaro - lowJaro
-    print("Jaro Winkler distance between the texts (high quality image to original):" + str(highJaro))
-    print("Jaro Winkler distance between the texts (low quality image to original):" + str(lowJaro))
-    print("Jaro Winkler distance improvement: " + str(jaroImprovement))
+    # print("Jaro Winkler distance between the texts (high quality image to original):" + str(highJaro))
+    # print("Jaro Winkler distance between the texts (low quality image to original):" + str(lowJaro))
+    # print("Jaro Winkler distance improvement: " + str(jaroImprovement))
 
     # Calculate the PSNR
     psnrResult = psnr('test.png', 'srgan.png')
-    print("The PSNR (Peak to Signal Noise Ratio) of the images is: " + str(psnrResult))
+    # print("The PSNR (Peak to Signal Noise Ratio) of the images is: " + str(psnrResult))
 
     # Calculate the Levenshtein distance between the texts
     levenshteinLow = levenshtein(lowquality, original)
     levenshteinHigh = levenshtein(highquality, original)
     levenshteinImprovement = levenshteinLow - levenshteinHigh
-    print("Levenshtein distance between the texts (low quality image): " + str(levenshteinLow))
-    print("Levenshtein distance between the texts (high quality image): " + str(levenshteinHigh))
-    print("Levenshtein improvement: " + str(levenshteinImprovement))
+    # print("Levenshtein distance between the texts (low quality image): " + str(levenshteinLow))
+    # print("Levenshtein distance between the texts (high quality image): " + str(levenshteinHigh))
+    # print("Levenshtein improvement: " + str(levenshteinImprovement))
 
     # Calculate the cosine similarity between the texts
     cosineLow = cosineSimilarity(lowquality, original)
     cosineHigh = cosineSimilarity(highquality, original)
     cosineImprovement = cosineHigh - cosineLow
-    print("The cosine similarity between the texts (low quality image) is: " + str(cosineLow))
-    print("The cosine similarity between the texts (high quality image) is: " + str(cosineHigh))
-    print("Cosine similarity improvement: " + str(cosineImprovement))
+    # print("The cosine similarity between the texts (low quality image) is: " + str(cosineLow))
+    # print("The cosine similarity between the texts (high quality image) is: " + str(cosineHigh))
+    # print("Cosine similarity improvement: " + str(cosineImprovement))
     
     # Create array with all the metrics
-    metricsArray = [lowJaro, highJaro, highJaro - lowJaro, psnr('test.png', 'srgan.png'), levenshtein(lowquality, original), levenshtein(highquality, original), levenshtein(lowquality, original) - levenshtein(highquality, original), cosineSimilarity(lowquality, original), cosineSimilarity(highquality, original), cosineSimilarity(highquality, original) - cosineSimilarity(lowquality, original)]
+    metricsArray = [lowJaro, highJaro, jaroImprovement, psnr, levenshteinLow, levenshteinHigh, levenshteinImprovement, cosineLow, cosineHigh, cosineImprovement]
+    return metricsArray
 
 # Function to run GAN model on images
 def gan(device, model_path, test_img_folder):
@@ -177,7 +178,7 @@ for item in items:
     if os.path.isfile(os.path.join(folder_path, item)):
         name, extension = os.path.splitext(item)
         print(name)
-        arr = np.array(metricsResults(tesseract('test_dataset/images/' + name + '.png'), tesseract('results/' + name + '.png'), jsonText(name)))
+        arr = metricsResults(tesseract('test_dataset/images/' + name + '.png'), tesseract('../results/' + name + '.png'), jsonText(name))
         lowJaroArr.append(arr[0])
         highJaroArr.append(arr[1])
         jaroImprovementArr.append(arr[2])

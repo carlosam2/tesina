@@ -38,7 +38,7 @@ def jaroMetric(text1, text2):
     return jaro.jaro_winkler_metric(text1, text2)
 
 # Function to extract text from image using tesseract
-def tesseract(imgPath):
+def tesseractFunction(imgPath):
     text = pytesseract.image_to_string(Image.open(imgPath))
     text = text.replace('\n', ' ')
     return text
@@ -77,8 +77,8 @@ def cosineSimilarity(img1, original):
 def textExtract(lowquality, highquality, originalName):
     # Extract texts from ground truth, low resolution image and high resolution image
     original = jsonText(originalName)
-    tessLowW = tesseract(lowquality)
-    tessHighW = tesseract(highquality)
+    tessLowW = tesseractFunction(lowquality)
+    tessHighW = tesseractFunction(highquality)
     textArray = [original, tessLowW, tessHighW]
     return textArray
 
@@ -96,8 +96,12 @@ def metricsResults(lowquality, highquality, original):
     # print("The PSNR (Peak to Signal Noise Ratio) of the images is: " + str(psnrResult))
 
     # Calculate the Levenshtein distance between the texts
-    levenshteinLow = levenshtein(lowquality, original)
-    levenshteinHigh = levenshtein(highquality, original)
+    max_distance = max(len(lowquality), len(original))
+    levenshteinLow = (levenshtein(lowquality, original) / max_distance) 
+    levenshteinHigh = (levenshtein(highquality, original) / max_distance) 
+
+    # levenshteinLow = levenshtein(lowquality, original)
+    # levenshteinHigh = levenshtein(highquality, original)
     levenshteinImprovement = levenshteinLow - levenshteinHigh
     # print("Levenshtein distance between the texts (low quality image): " + str(levenshteinLow))
     # print("Levenshtein distance between the texts (high quality image): " + str(levenshteinHigh))
@@ -112,7 +116,7 @@ def metricsResults(lowquality, highquality, original):
     # print("Cosine similarity improvement: " + str(cosineImprovement))
     
     # Create array with all the metrics
-    metricsArray = [lowJaro, highJaro, jaroImprovement, psnr, levenshteinLow, levenshteinHigh, levenshteinImprovement, cosineLow, cosineHigh, cosineImprovement]
+    metricsArray = [lowJaro, highJaro, jaroImprovement, psnrResult, levenshteinLow, levenshteinHigh, levenshteinImprovement, cosineLow, cosineHigh, cosineImprovement]
     return metricsArray
 
 # Function to run GAN model on images
@@ -158,7 +162,7 @@ folder_path = "test_dataset/images/"
 items = os.listdir(folder_path)
 
 # Run the GAN model on the images
-# gan("cuda", 'models/RRDB_ESRGAN_x4.pth', 'test_dataset/images/*')
+#gan("cuda", 'models/RRDB_ESRGAN_x4.pth', 'test_dataset/images/*')
 
 
 # Create arrays for each metric
@@ -173,12 +177,13 @@ cosineLowArr = []
 cosineHighArr = []
 cosineImprovementArr = []
 
+
 # Loop through each item and check if it is a file
 for item in items:
-    if os.path.isfile(os.path.join(folder_path, item)):
+    if os.path.isfile(os.path.join(folder_path, item)) and item.endswith(".png"):
         name, extension = os.path.splitext(item)
         print(name)
-        arr = metricsResults(tesseract('test_dataset/images/' + name + '.png'), tesseract('../results/' + name + '.png'), jsonText(name))
+        arr = metricsResults(tesseractFunction('test_dataset/images/' + name + '.png'), tesseractFunction('results/' + name + '.png'), jsonText(name))
         lowJaroArr.append(arr[0])
         highJaroArr.append(arr[1])
         jaroImprovementArr.append(arr[2])
@@ -189,6 +194,7 @@ for item in items:
         cosineLowArr.append(arr[7])
         cosineHighArr.append(arr[8])
         cosineImprovementArr.append(arr[9])
+        print(arr)
 
 # Calculate the average of each metric
 lowJaroAvg = np.average(lowJaroArr)
@@ -243,10 +249,5 @@ plt.show()
 
 # # Extract texts from ground truth, low resolution image and high resolution image
 # original = jsonText('83635935')
-# tessLowW = tesseract('test.png')
-# tessHighW = tesseract('srgan.png')
-
-# metricsResults(tessLowW, tessHighW, original)
-
-
-
+# tessLowW = tesseractFunction('test.png')
+# tessHighW = tesseractFunction('srgan.png')

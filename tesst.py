@@ -14,6 +14,18 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import matplotlib.pyplot as plt
 
+# Function to extract text from text file
+def extract_text_from_file(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            text = file.read()
+        return text
+    except FileNotFoundError:
+        print(f"File '{file_path}' not found.")
+        return ""
+    except IOError:
+        print(f"Error reading file '{file_path}'.")
+        return ""
 
 # Function to call ESRGAN API from replicate
 def apiESRGAN(imagePATH):
@@ -178,12 +190,20 @@ cosineHighArr = []
 cosineImprovementArr = []
 
 
-# Loop through each item and check if it is a file
-for item in items:
-    if os.path.isfile(os.path.join(folder_path, item)) and item.endswith(".png"):
-        name, extension = os.path.splitext(item)
-        print(name)
-        arr = metricsResults(tesseractFunction('test_dataset/images/' + name + '.png'), tesseractFunction('results/' + name + '.png'), jsonText(name))
+# Specify the folder path
+folder_pathAux = 'simulated-sources/images/'
+gan("cuda", 'models/RRDB_ESRGAN_x4.pth', 'simulated-sources/images/*')
+
+
+
+# Loop through the files in the folder
+for filename in os.listdir(folder_pathAux):
+    # Check if the file has a .png extension
+    if filename.endswith('.png'):
+        # Get the file name without extension
+        name_without_extension = os.path.splitext(filename)[0]
+        arr = metricsResults(tesseractFunction(folder_pathAux + name_without_extension + '.png'), tesseractFunction('results2/' + name_without_extension + '.png'), extract_text_from_file("simulated-sources/ground_truth" + name_without_extension + '.txt'))
+        # Print the file name without extension
         lowJaroArr.append(arr[0])
         highJaroArr.append(arr[1])
         jaroImprovementArr.append(arr[2])
@@ -195,6 +215,25 @@ for item in items:
         cosineHighArr.append(arr[8])
         cosineImprovementArr.append(arr[9])
         print(arr)
+
+
+# # Loop through each item and check if it is a file
+# for item in items:
+#     if os.path.isfile(os.path.join(folder_path, item)) and item.endswith(".png"):
+#         name, extension = os.path.splitext(item)
+#         print(name)
+#         arr = metricsResults(tesseractFunction('test_dataset/images/' + name + '.png'), tesseractFunction('results/' + name + '.png'), jsonText(name))
+#         lowJaroArr.append(arr[0])
+#         highJaroArr.append(arr[1])
+#         jaroImprovementArr.append(arr[2])
+#         psnrArr.append(arr[3])
+#         levenshteinLowArr.append(arr[4])
+#         levenshteinHighArr.append(arr[5])
+#         levenshteinImprovementArr.append(arr[6])
+#         cosineLowArr.append(arr[7])
+#         cosineHighArr.append(arr[8])
+#         cosineImprovementArr.append(arr[9])
+#         print(arr)
 
 # Calculate the average of each metric
 lowJaroAvg = np.average(lowJaroArr)

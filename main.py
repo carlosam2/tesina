@@ -1,4 +1,5 @@
 import functions
+import os
 
 # This program uses an already trained GAN model to upscale an image by 4x and then uses Tesseract to read text from the upscaled image
 # The recommended use for this program is to use it to extract text from a low resolution image or degraded document
@@ -26,5 +27,15 @@ path = 'images/*'
 # Gan function to upscale image by 4x
 functions.gan("cuda", 'models/RRDB_ESRGAN_x4.pth', path)
 # Tessaract function to read text from image
-text = functions.tesseractFunction('test.png')
-print(text + "\n")
+
+
+# Get all file names in the folder
+file_names = os.listdir(path)
+# Filter PNG files
+png_files = [filename for filename in file_names if filename.endswith(".png")]
+
+# Print the names of PNG files
+for png_file in png_files:
+    text = functions.tesseractFunction(png_file)
+    print(png_file)
+    print(text + "\n")

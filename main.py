@@ -30,12 +30,15 @@ functions.gan("cuda", 'models/RRDB_ESRGAN_x4.pth', path)
 
 
 # Get all file names in the folder
-file_names = os.listdir(path)
+file_names = os.listdir('images/')
 # Filter PNG files
 png_files = [filename for filename in file_names if filename.endswith(".png")]
 
 # Print the names of PNG files
 for png_file in png_files:
-    text = functions.tesseractFunction(png_file)
+    text = functions.tesseractFunction("images/" + png_file)
     print(png_file)
     print(text + "\n")
+    file_path = "results/"+png_file+".txt"
+    with open(file_path, "w") as file:
+      file.write(text)

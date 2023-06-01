@@ -39,6 +39,7 @@ for png_file in png_files:
     text = functions.tesseractFunction("images/" + png_file)
     print(png_file)
     print(text + "\n")
-    file_path = "results/"+png_file+".txt"
+    file_name = os.path.splitext(png_file)[0]  # Get the filename without extension
+    file_path = "results/" + file_name + ".txt"
     with open(file_path, "w") as file:
-      file.write(text)
+        file.write(text)
